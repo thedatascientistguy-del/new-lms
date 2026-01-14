@@ -21,22 +21,35 @@ namespace LibraryManagement.API.Middleware
                 context.Request.EnableBuffering();
                 
                 using var reader = new StreamReader(context.Request.Body, Encoding.UTF8, leaveOpen: true);
-                var encryptedBody = await reader.ReadToEndAsync();
+                var body = await reader.ReadToEndAsync();
                 
-                if (!string.IsNullOrEmpty(encryptedBody))
+                if (!string.IsNullOrEmpty(body))
                 {
-                    try
+                    // Check if the body is already valid JSON (starts with { or [)
+                    var trimmedBody = body.TrimStart();
+                    bool isJson = trimmedBody.StartsWith("{") || trimmedBody.StartsWith("[");
+                    
+                    if (isJson)
                     {
-                        var decryptedBody = _encryptionService.Decrypt(encryptedBody);
-                        var bytes = Encoding.UTF8.GetBytes(decryptedBody);
-                        context.Request.Body = new MemoryStream(bytes);
+                        // Body is already JSON, no decryption needed
                         context.Request.Body.Position = 0;
                     }
-                    catch
+                    else
                     {
-                        context.Response.StatusCode = 400;
-                        await context.Response.WriteAsync("Invalid encrypted payload");
-                        return;
+                        // Body appears to be encrypted, try to decrypt
+                        try
+                        {
+                            var decryptedBody = _encryptionService.Decrypt(body);
+                            var bytes = Encoding.UTF8.GetBytes(decryptedBody);
+                            context.Request.Body = new MemoryStream(bytes);
+                            context.Request.Body.Position = 0;
+                        }
+                        catch
+                        {
+                            context.Response.StatusCode = 400;
+                            await context.Response.WriteAsync("Invalid encrypted payload");
+                            return;
+                        }
                     }
                 }
                 else
