@@ -69,7 +69,7 @@ if (app.Environment.IsDevelopment())
 
 // Custom middleware order is important
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-app.UseMiddleware<DecryptionMiddleware>();
+app.UseMiddleware<DecryptionMiddleware>(); // Now supports both plain JSON and encrypted payloads
 
 app.UseHttpsRedirection();
 

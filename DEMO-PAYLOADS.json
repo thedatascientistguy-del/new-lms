@@ -1,0 +1,327 @@
+{
+  "API_TESTING_PAYLOADS": {
+    "1_SIGNUP": [
+      {
+        "description": "User 1 - John Doe",
+        "endpoint": "POST /api/auth/signup",
+        "payload": {
+          "username": "john_doe",
+          "email": "john@example.com",
+          "password": "SecurePassword123"
+        }
+      },
+      {
+        "description": "User 2 - Jane Smith",
+        "endpoint": "POST /api/auth/signup",
+        "payload": {
+          "username": "jane_smith",
+          "email": "jane@example.com",
+          "password": "MyPassword456"
+        }
+      },
+      {
+        "description": "User 3 - Test User",
+        "endpoint": "POST /api/auth/signup",
+        "payload": {
+          "username": "testuser",
+          "email": "test@library.com",
+          "password": "Test@123456"
+        }
+      }
+    ],
+    "2_LOGIN": [
+      {
+        "description": "Login as John",
+        "endpoint": "POST /api/auth/login",
+        "payload": {
+          "email": "john@example.com",
+          "password": "SecurePassword123"
+        }
+      },
+      {
+        "description": "Login as Jane",
+        "endpoint": "POST /api/auth/login",
+        "payload": {
+          "email": "jane@example.com",
+          "password": "MyPassword456"
+        }
+      }
+    ],
+    "3_ADD_BOOKS": [
+      {
+        "description": "Programming Book 1",
+        "endpoint": "POST /api/books",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        },
+        "payload": {
+          "title": "Clean Code",
+          "author": "Robert C. Martin",
+          "isbn": "978-0132350884",
+          "publishedYear": 2008
+        }
+      },
+      {
+        "description": "Programming Book 2",
+        "endpoint": "POST /api/books",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        },
+        "payload": {
+          "title": "The Pragmatic Programmer",
+          "author": "Andrew Hunt and David Thomas",
+          "isbn": "978-0201616224",
+          "publishedYear": 1999
+        }
+      },
+      {
+        "description": "Programming Book 3",
+        "endpoint": "POST /api/books",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        },
+        "payload": {
+          "title": "Design Patterns: Elements of Reusable Object-Oriented Software",
+          "author": "Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides",
+          "isbn": "978-0201633610",
+          "publishedYear": 1994
+        }
+      },
+      {
+        "description": "Programming Book 4",
+        "endpoint": "POST /api/books",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        },
+        "payload": {
+          "title": "Refactoring: Improving the Design of Existing Code",
+          "author": "Martin Fowler",
+          "isbn": "978-0201485677",
+          "publishedYear": 1999
+        }
+      },
+      {
+        "description": "Programming Book 5",
+        "endpoint": "POST /api/books",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        },
+        "payload": {
+          "title": "Code Complete",
+          "author": "Steve McConnell",
+          "isbn": "978-0735619678",
+          "publishedYear": 2004
+        }
+      },
+      {
+        "description": "Fiction Book 1",
+        "endpoint": "POST /api/books",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        },
+        "payload": {
+          "title": "Harry Potter and the Philosopher's Stone",
+          "author": "J.K. Rowling",
+          "isbn": "978-0747532699",
+          "publishedYear": 1997
+        }
+      },
+      {
+        "description": "Fiction Book 2",
+        "endpoint": "POST /api/books",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        },
+        "payload": {
+          "title": "1984",
+          "author": "George Orwell",
+          "isbn": "978-0451524935",
+          "publishedYear": 1949
+        }
+      },
+      {
+        "description": "Fiction Book 3",
+        "endpoint": "POST /api/books",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        },
+        "payload": {
+          "title": "To Kill a Mockingbird",
+          "author": "Harper Lee",
+          "isbn": "978-0061120084",
+          "publishedYear": 1960
+        }
+      },
+      {
+        "description": "Science Book",
+        "endpoint": "POST /api/books",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        },
+        "payload": {
+          "title": "A Brief History of Time",
+          "author": "Stephen Hawking",
+          "isbn": "978-0553380163",
+          "publishedYear": 1988
+        }
+      },
+      {
+        "description": "Business Book",
+        "endpoint": "POST /api/books",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        },
+        "payload": {
+          "title": "The Lean Startup",
+          "author": "Eric Ries",
+          "isbn": "978-0307887894",
+          "publishedYear": 2011
+        }
+      }
+    ],
+    "4_GET_ALL_BOOKS": {
+      "description": "Get all books for authenticated user",
+      "endpoint": "GET /api/books",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN_HERE"
+      },
+      "payload": null
+    },
+    "5_GET_BOOK_BY_ID": {
+      "description": "Get specific book by ID",
+      "examples": [
+        {
+          "endpoint": "GET /api/books/1",
+          "headers": {
+            "Authorization": "Bearer YOUR_TOKEN_HERE"
+          }
+        },
+        {
+          "endpoint": "GET /api/books/2",
+          "headers": {
+            "Authorization": "Bearer YOUR_TOKEN_HERE"
+          }
+        },
+        {
+          "endpoint": "GET /api/books/5",
+          "headers": {
+            "Authorization": "Bearer YOUR_TOKEN_HERE"
+          }
+        }
+      ]
+    },
+    "6_DELETE_BOOK": {
+      "description": "Delete book by ID",
+      "examples": [
+        {
+          "endpoint": "DELETE /api/books/1",
+          "headers": {
+            "Authorization": "Bearer YOUR_TOKEN_HERE"
+          }
+        },
+        {
+          "endpoint": "DELETE /api/books/3",
+          "headers": {
+            "Authorization": "Bearer YOUR_TOKEN_HERE"
+          }
+        }
+      ]
+    }
+  },
+  "TESTING_WORKFLOW": {
+    "step_1": {
+      "action": "Signup",
+      "endpoint": "POST /api/auth/signup",
+      "payload": {
+        "username": "testuser",
+        "email": "test@library.com",
+        "password": "Test@123456"
+      },
+      "note": "Save the token from response"
+    },
+    "step_2": {
+      "action": "Add Book 1",
+      "endpoint": "POST /api/books",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN"
+      },
+      "payload": {
+        "title": "Clean Code",
+        "author": "Robert C. Martin",
+        "isbn": "978-0132350884",
+        "publishedYear": 2008
+      }
+    },
+    "step_3": {
+      "action": "Add Book 2",
+      "endpoint": "POST /api/books",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN"
+      },
+      "payload": {
+        "title": "The Pragmatic Programmer",
+        "author": "Andrew Hunt and David Thomas",
+        "isbn": "978-0201616224",
+        "publishedYear": 1999
+      }
+    },
+    "step_4": {
+      "action": "Get All Books",
+      "endpoint": "GET /api/books",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN"
+      }
+    },
+    "step_5": {
+      "action": "Get Book by ID",
+      "endpoint": "GET /api/books/1",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN"
+      }
+    },
+    "step_6": {
+      "action": "Delete Book",
+      "endpoint": "DELETE /api/books/2",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN"
+      }
+    },
+    "step_7": {
+      "action": "Verify Deletion",
+      "endpoint": "GET /api/books",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN"
+      },
+      "note": "Book 2 should be gone"
+    }
+  },
+  "QUICK_COPY_PASTE": {
+    "signup": {
+      "username": "testuser",
+      "email": "test@library.com",
+      "password": "Test@123456"
+    },
+    "login": {
+      "email": "test@library.com",
+      "password": "Test@123456"
+    },
+    "book1": {
+      "title": "Clean Code",
+      "author": "Robert C. Martin",
+      "isbn": "978-0132350884",
+      "publishedYear": 2008
+    },
+    "book2": {
+      "title": "The Pragmatic Programmer",
+      "author": "Andrew Hunt and David Thomas",
+      "isbn": "978-0201616224",
+      "publishedYear": 1999
+    },
+    "book3": {
+      "title": "Design Patterns",
+      "author": "Gang of Four",
+      "isbn": "978-0201633610",
+      "publishedYear": 1994
+    }
+  }
+}
