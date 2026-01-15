@@ -2,8 +2,8 @@ using LibraryManagement.Core.Interfaces;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 
 namespace LibraryManagement.Infrastructure.Services
 {
@@ -27,17 +27,31 @@ namespace LibraryManagement.Infrastructure.Services
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.UTF8.GetBytes(_secretKey);
             
-            // Encrypt sensitive data before putting in JWT
-            var encryptedUserId = _encryptionService.Encrypt(userId.ToString());
-            var encryptedEmail = _encryptionService.Encrypt(email);
+            // Create the complete payload with all claims
+            var payload = new
+            {
+                uid = userId,
+                eml = email,
+                jti = Guid.NewGuid().ToString(),
+                nbf = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                exp = DateTimeOffset.UtcNow.AddHours(24).ToUnixTimeSeconds(),
+                iat = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                iss = _issuer,
+                aud = _audience
+            };
             
+            // Serialize the entire payload to JSON
+            var payloadJson = JsonSerializer.Serialize(payload);
+            
+            // Encrypt the entire payload
+            var encryptedPayload = _encryptionService.Encrypt(payloadJson);
+            
+            // Create JWT with only the encrypted payload as a single claim
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[]
                 {
-                    new Claim("uid", encryptedUserId), // Encrypted user ID
-                    new Claim("eml", encryptedEmail),  // Encrypted email
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()) // Unique token ID
+                    new Claim("data", encryptedPayload) // All data encrypted in one claim
                 }),
                 Expires = DateTime.UtcNow.AddHours(24),
                 Issuer = _issuer,
@@ -77,14 +91,27 @@ namespace LibraryManagement.Infrastructure.Services
                 
                 var jwtToken = (JwtSecurityToken)validatedToken;
                 
-                // Get encrypted user ID and decrypt it
-                var encryptedUserId = jwtToken.Claims.FirstOrDefault(x => x.Type == "uid")?.Value;
+                // Get the encrypted data claim
+                var encryptedData = jwtToken.Claims.FirstOrDefault(x => x.Type == "data")?.Value;
                 
-                if (string.IsNullOrEmpty(encryptedUserId))
+                if (string.IsNullOrEmpty(encryptedData))
                     return null;
                 
-                var decryptedUserId = _encryptionService.Decrypt(encryptedUserId);
-                return int.Parse(decryptedUserId);
+                // Decrypt the entire payload
+                var decryptedJson = _encryptionService.Decrypt(encryptedData);
+                
+                // Deserialize to get the user ID
+                var payloadDoc = JsonDocument.Parse(decryptedJson);
+                var userId = payloadDoc.RootElement.GetProperty("uid").GetInt32();
+                
+                // Validate expiration from decrypted payload
+                var exp = payloadDoc.RootElement.GetProperty("exp").GetInt64();
+                var expDateTime = DateTimeOffset.FromUnixTimeSeconds(exp).UtcDateTime;
+                
+                if (expDateTime < DateTime.UtcNow)
+                    return null; // Token expired
+                
+                return userId;
             }
             catch
             {
