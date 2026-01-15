@@ -16,7 +16,7 @@ namespace LibraryManagement.API.Middleware
             var path = context.Request.Path.Value?.ToLower();
             
             // Skip validation for auth endpoints
-            if (path.Contains("/auth/"))
+            if (path != null && path.Contains("/auth/"))
             {
                 await _next(context);
                 return;
@@ -42,15 +42,6 @@ namespace LibraryManagement.API.Middleware
 
             // Store userId in HttpContext for use in controllers
             context.Items["UserId"] = userId.Value;
-
-            // Validate that the userId in token matches the userId in claims
-            var claimUserId = context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (!string.IsNullOrEmpty(claimUserId) && int.Parse(claimUserId) != userId.Value)
-            {
-                context.Response.StatusCode = 400;
-                await context.Response.WriteAsync("Bad Request: Tampered request detected");
-                return;
-            }
 
             await _next(context);
         }

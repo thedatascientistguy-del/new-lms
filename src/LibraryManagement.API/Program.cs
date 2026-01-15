@@ -61,11 +61,15 @@ builder.Services.AddScoped<IBookRepository, BookRepository>();
 // Services
 builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
 builder.Services.AddSingleton<IJwtService>(sp =>
-    new JwtService(
+{
+    var encryptionService = sp.GetRequiredService<IEncryptionService>();
+    return new JwtService(
         builder.Configuration["Jwt:SecretKey"],
         builder.Configuration["Jwt:Issuer"],
-        builder.Configuration["Jwt:Audience"]
-    ));
+        builder.Configuration["Jwt:Audience"],
+        encryptionService
+    );
+});
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -87,7 +91,22 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidAudience = jwtSettings["Audience"],
         ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero,
+        // Don't map claims to Microsoft's claim types
+        NameClaimType = "uid",
+        RoleClaimType = "role"
+    };
+    
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+            {
+                context.Response.Headers.Add("Token-Expired", "true");
+            }
+            return Task.CompletedTask;
+        }
     };
 });
 
