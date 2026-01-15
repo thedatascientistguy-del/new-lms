@@ -27,35 +27,40 @@ namespace LibraryManagement.Infrastructure.Services
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.UTF8.GetBytes(_secretKey);
             
-            // Encrypt individual claim values
-            var encryptedUserId = _encryptionService.Encrypt(userId.ToString());
-            var encryptedEmail = _encryptionService.Encrypt(email);
-            var encryptedJti = _encryptionService.Encrypt(Guid.NewGuid().ToString());
-            var encryptedIssuer = _encryptionService.Encrypt(_issuer);
-            var encryptedAudience = _encryptionService.Encrypt(_audience);
-            
             var now = DateTime.UtcNow;
             var expires = now.AddHours(24);
             
-            // Encrypt timestamp values as strings
+            // Create user data object with uid and email
+            var userData = new
+            {
+                uid = userId,
+                eml = email
+            };
+            
+            // Serialize and encrypt user data into single "data" field
+            var userDataJson = JsonSerializer.Serialize(userData);
+            var encryptedData = _encryptionService.Encrypt(userDataJson);
+            
+            // Encrypt other claim values individually
+            var encryptedJti = _encryptionService.Encrypt(Guid.NewGuid().ToString());
+            var encryptedIssuer = _encryptionService.Encrypt(_issuer);
+            var encryptedAudience = _encryptionService.Encrypt(_audience);
             var encryptedNbf = _encryptionService.Encrypt(new DateTimeOffset(now).ToUnixTimeSeconds().ToString());
             var encryptedExp = _encryptionService.Encrypt(new DateTimeOffset(expires).ToUnixTimeSeconds().ToString());
             var encryptedIat = _encryptionService.Encrypt(new DateTimeOffset(now).ToUnixTimeSeconds().ToString());
             
-            // Create JWT with encrypted claim values
-            // We add encrypted iss and aud as custom claims since standard ones need to be plain for validation
+            // Create JWT with encrypted claims
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[]
                 {
-                    new Claim("uid", encryptedUserId),
-                    new Claim("eml", encryptedEmail),
+                    new Claim("data", encryptedData),      // User data (uid, eml) encrypted together
                     new Claim("jti", encryptedJti),
                     new Claim("nbf", encryptedNbf),
                     new Claim("exp", encryptedExp),
                     new Claim("iat", encryptedIat),
-                    new Claim("iss", encryptedIssuer),      // Encrypted issuer in standard claim
-                    new Claim("aud", encryptedAudience)     // Encrypted audience in standard claim
+                    new Claim("iss", encryptedIssuer),
+                    new Claim("aud", encryptedAudience)
                 }),
                 Expires = expires,  // Standard JWT expiration for validation
                 SigningCredentials = new SigningCredentials(
@@ -78,7 +83,6 @@ namespace LibraryManagement.Infrastructure.Services
                 var key = Encoding.UTF8.GetBytes(_secretKey);
                 
                 // Validate JWT signature and structure
-                // Disable issuer/audience validation since they're encrypted
                 var validationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
@@ -92,17 +96,19 @@ namespace LibraryManagement.Infrastructure.Services
                 var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
                 
                 // Extract encrypted claims
-                // Note: exp, nbf, iat might be numeric (added by JWT library) or encrypted strings (our custom claims)
-                var encryptedUserId = principal.FindFirst("uid")?.Value;
+                var encryptedData = principal.FindFirst("data")?.Value;
                 var encryptedIssuer = principal.FindFirst("iss")?.Value;
                 var encryptedAudience = principal.FindFirst("aud")?.Value;
                 
-                if (string.IsNullOrEmpty(encryptedUserId))
+                if (string.IsNullOrEmpty(encryptedData))
                     return null;
                 
-                // Decrypt user ID
-                var userIdStr = _encryptionService.Decrypt(encryptedUserId);
-                var userId = int.Parse(userIdStr);
+                // Decrypt and parse user data
+                var decryptedJson = _encryptionService.Decrypt(encryptedData);
+                var userData = JsonDocument.Parse(decryptedJson);
+                
+                // Extract user ID from decrypted data
+                var userId = userData.RootElement.GetProperty("uid").GetInt32();
                 
                 // Decrypt and validate issuer
                 if (!string.IsNullOrEmpty(encryptedIssuer))
@@ -119,9 +125,6 @@ namespace LibraryManagement.Infrastructure.Services
                     if (audience != _audience)
                         return null;
                 }
-                
-                // Note: exp, nbf, iat are validated by JWT library (they're numeric timestamps)
-                // We don't need to decrypt them since they're automatically added by the library
                 
                 return userId;
             }
