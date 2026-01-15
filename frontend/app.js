@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'https://localhost:7001'; // Update this port to match your API
+const API_BASE_URL = 'https://localhost:7146'; // Update this port to match your API
 
 // State Management
 let currentToken = localStorage.getItem('token');
