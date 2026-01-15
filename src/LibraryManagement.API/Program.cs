@@ -71,8 +71,26 @@ builder.Services.AddSingleton<IJwtService>(sp =>
     );
 });
 
-// Note: Not using standard JWT authentication since we're using fully encrypted tokens
-// Authentication is handled by custom JwtValidationMiddleware
+// JWT Authentication with encrypted claims
+var jwtKey = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]);
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(jwtKey),
+        ValidateIssuer = false, // Custom validation in middleware
+        ValidateAudience = false, // Custom validation in middleware
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
@@ -89,7 +107,11 @@ app.UseMiddleware<DecryptionMiddleware>();
 
 app.UseHttpsRedirection();
 
-// Custom JWT validation (no standard authentication middleware)
+// Authentication & Authorization
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Custom JWT validation for encrypted claims
 app.UseMiddleware<JwtValidationMiddleware>();
 
 app.MapControllers();

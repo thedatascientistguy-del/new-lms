@@ -27,28 +27,43 @@ namespace LibraryManagement.Infrastructure.Services
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.UTF8.GetBytes(_secretKey);
             
-            // Create the complete payload with all claims
-            var payload = new
+            // Encrypt individual claim values
+            var encryptedUserId = _encryptionService.Encrypt(userId.ToString());
+            var encryptedEmail = _encryptionService.Encrypt(email);
+            var encryptedJti = _encryptionService.Encrypt(Guid.NewGuid().ToString());
+            var encryptedIssuer = _encryptionService.Encrypt(_issuer);
+            var encryptedAudience = _encryptionService.Encrypt(_audience);
+            
+            var now = DateTime.UtcNow;
+            var expires = now.AddHours(24);
+            
+            // Encrypt timestamp values as strings
+            var encryptedNbf = _encryptionService.Encrypt(new DateTimeOffset(now).ToUnixTimeSeconds().ToString());
+            var encryptedExp = _encryptionService.Encrypt(new DateTimeOffset(expires).ToUnixTimeSeconds().ToString());
+            var encryptedIat = _encryptionService.Encrypt(new DateTimeOffset(now).ToUnixTimeSeconds().ToString());
+            
+            // Create JWT with encrypted claim VALUES (structure is visible, data is not)
+            var tokenDescriptor = new SecurityTokenDescriptor
             {
-                uid = userId,
-                eml = email,
-                jti = Guid.NewGuid().ToString(),
-                nbf = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                exp = DateTimeOffset.UtcNow.AddHours(24).ToUnixTimeSeconds(),
-                iat = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                iss = _issuer,
-                aud = _audience
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim("uid", encryptedUserId),
+                    new Claim("eml", encryptedEmail),
+                    new Claim("jti", encryptedJti),
+                    new Claim("nbf", encryptedNbf),
+                    new Claim("exp", encryptedExp),
+                    new Claim("iat", encryptedIat),
+                    new Claim("iss", encryptedIssuer),
+                    new Claim("aud", encryptedAudience)
+                }),
+                Expires = expires,
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(key),
+                    SecurityAlgorithms.HmacSha256Signature)
             };
             
-            // Serialize the entire payload to JSON
-            var payloadJson = JsonSerializer.Serialize(payload);
-            
-            // Encrypt the entire payload
-            var encryptedPayload = _encryptionService.Encrypt(payloadJson);
-            
-            // Return ONLY the encrypted string (no JWT wrapper)
-            // This way, EVERYTHING is encrypted - no visible claims at all
-            return encryptedPayload;
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
         }
 
         public int? ValidateToken(string token)
@@ -58,29 +73,61 @@ namespace LibraryManagement.Infrastructure.Services
 
             try
             {
-                // Decrypt the token (it's just an encrypted string now)
-                var decryptedJson = _encryptionService.Decrypt(token);
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.UTF8.GetBytes(_secretKey);
                 
-                // Deserialize to get the payload
-                var payloadDoc = JsonDocument.Parse(decryptedJson);
-                var userId = payloadDoc.RootElement.GetProperty("uid").GetInt32();
+                // Validate JWT signature and structure
+                var validationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false, // We'll validate manually after decryption
+                    ValidateAudience = false, // We'll validate manually after decryption
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero
+                };
                 
-                // Validate expiration from decrypted payload
-                var exp = payloadDoc.RootElement.GetProperty("exp").GetInt64();
-                var expDateTime = DateTimeOffset.FromUnixTimeSeconds(exp).UtcDateTime;
+                var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
                 
-                if (expDateTime < DateTime.UtcNow)
-                    return null; // Token expired
+                // Extract and decrypt claims
+                var encryptedUserId = principal.FindFirst("uid")?.Value;
+                var encryptedExp = principal.FindFirst("exp")?.Value;
+                var encryptedIssuer = principal.FindFirst("iss")?.Value;
+                var encryptedAudience = principal.FindFirst("aud")?.Value;
+                
+                if (string.IsNullOrEmpty(encryptedUserId))
+                    return null;
+                
+                // Decrypt claim values
+                var userIdStr = _encryptionService.Decrypt(encryptedUserId);
+                var userId = int.Parse(userIdStr);
+                
+                // Validate expiration
+                if (!string.IsNullOrEmpty(encryptedExp))
+                {
+                    var expStr = _encryptionService.Decrypt(encryptedExp);
+                    var exp = long.Parse(expStr);
+                    var expDateTime = DateTimeOffset.FromUnixTimeSeconds(exp).UtcDateTime;
+                    
+                    if (expDateTime < DateTime.UtcNow)
+                        return null;
+                }
                 
                 // Validate issuer
-                var iss = payloadDoc.RootElement.GetProperty("iss").GetString();
-                if (iss != _issuer)
-                    return null;
+                if (!string.IsNullOrEmpty(encryptedIssuer))
+                {
+                    var issuer = _encryptionService.Decrypt(encryptedIssuer);
+                    if (issuer != _issuer)
+                        return null;
+                }
                 
                 // Validate audience
-                var aud = payloadDoc.RootElement.GetProperty("aud").GetString();
-                if (aud != _audience)
-                    return null;
+                if (!string.IsNullOrEmpty(encryptedAudience))
+                {
+                    var audience = _encryptionService.Decrypt(encryptedAudience);
+                    if (audience != _audience)
+                        return null;
+                }
                 
                 return userId;
             }
