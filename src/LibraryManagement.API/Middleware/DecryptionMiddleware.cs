@@ -6,12 +6,12 @@ namespace LibraryManagement.API.Middleware
     public class DecryptionMiddleware
     {
         private readonly RequestDelegate _next;
-        private readonly IEncryptionService _encryptionService;
+        private readonly IPayloadEncryptionService _payloadEncryptionService;
 
-        public DecryptionMiddleware(RequestDelegate next, IEncryptionService encryptionService)
+        public DecryptionMiddleware(RequestDelegate next, IPayloadEncryptionService payloadEncryptionService)
         {
             _next = next;
-            _encryptionService = encryptionService;
+            _payloadEncryptionService = payloadEncryptionService;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -39,7 +39,7 @@ namespace LibraryManagement.API.Middleware
                         // Body appears to be encrypted, try to decrypt
                         try
                         {
-                            var decryptedBody = _encryptionService.Decrypt(body);
+                            var decryptedBody = _payloadEncryptionService.Decrypt(body);
                             var bytes = Encoding.UTF8.GetBytes(decryptedBody);
                             context.Request.Body = new MemoryStream(bytes);
                             context.Request.Body.Position = 0;

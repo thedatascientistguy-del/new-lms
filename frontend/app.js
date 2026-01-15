@@ -63,7 +63,7 @@ function setupEventListeners() {
 }
 
 // API Calls
-async function apiCall(endpoint, method = 'GET', body = null) {
+async function apiCall(endpoint, method = 'GET', body = null, encrypt = false) {
     const headers = {
         'Content-Type': 'application/json'
     };
@@ -78,7 +78,16 @@ async function apiCall(endpoint, method = 'GET', body = null) {
     };
     
     if (body) {
-        options.body = JSON.stringify(body);
+        const jsonBody = JSON.stringify(body);
+        
+        if (encrypt) {
+            // Encrypt the payload
+            const encryptedBody = await encryptString(jsonBody);
+            options.body = encryptedBody;
+            headers['Content-Type'] = 'text/plain'; // Encrypted data is not JSON
+        } else {
+            options.body = jsonBody;
+        }
     }
     
     try {
@@ -115,7 +124,8 @@ async function handleLogin(e) {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
     
-    const result = await apiCall('/api/auth/login', 'POST', { email, password });
+    // Send encrypted payload
+    const result = await apiCall('/api/auth/login', 'POST', { email, password }, true);
     
     if (result && result.token) {
         currentToken = result.token;
@@ -136,7 +146,8 @@ async function handleSignup(e) {
     const email = document.getElementById('signupEmail').value;
     const password = document.getElementById('signupPassword').value;
     
-    const result = await apiCall('/api/auth/signup', 'POST', { username, email, password });
+    // Send encrypted payload
+    const result = await apiCall('/api/auth/signup', 'POST', { username, email, password }, true);
     
     if (result && result.token) {
         currentToken = result.token;
@@ -200,7 +211,8 @@ async function handleSaveBook(e) {
         publishedYear: parseInt(document.getElementById('bookPublishedYear').value)
     };
     
-    const result = await apiCall('/api/books', 'POST', book);
+    // Send encrypted payload
+    const result = await apiCall('/api/books', 'POST', book, true);
     
     if (result) {
         showNotification('Book added successfully!', 'success');

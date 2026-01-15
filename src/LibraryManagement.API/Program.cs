@@ -59,7 +59,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IBookRepository, BookRepository>();
 
 // Services
-builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
+builder.Services.AddSingleton<IEncryptionService, EncryptionService>(); // OS-based for JWT
+builder.Services.AddSingleton<IPayloadEncryptionService, PayloadEncryptionService>(); // Shared key for payloads
 builder.Services.AddSingleton<IJwtService>(sp =>
 {
     var encryptionService = sp.GetRequiredService<IEncryptionService>();
