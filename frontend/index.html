@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Login Page -->
+        <div id="loginPage" class="page active">
+            <div class="form-container">
+                <h1>Library Management System</h1>
+                <h2>Login</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                <p class="switch-form">Don't have an account? <a href="#" id="showSignup">Sign Up</a></p>
+            </div>
+        </div>
+
+        <!-- Signup Page -->
+        <div id="signupPage" class="page">
+            <div class="form-container">
+                <h1>Library Management System</h1>
+                <h2>Sign Up</h2>
+                <form id="signupForm">
+                    <div class="form-group">
+                        <label for="signupUsername">Username</label>
+                        <input type="text" id="signupUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signupEmail">Email</label>
+                        <input type="email" id="signupEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signupPassword">Password</label>
+                        <input type="password" id="signupPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Sign Up</button>
+                </form>
+                <p class="switch-form">Already have an account? <a href="#" id="showLogin">Login</a></p>
+            </div>
+        </div>
+
+        <!-- Dashboard Page -->
+        <div id="dashboardPage" class="page">
+            <div class="dashboard-header">
+                <h1>Library Dashboard</h1>
+                <div class="user-info">
+                    <span id="userEmail"></span>
+                    <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+                </div>
+            </div>
+
+            <div class="dashboard-content">
+                <div class="actions">
+                    <button id="addBookBtn" class="btn btn-primary">Add New Book</button>
+                </div>
+
+                <div id="booksContainer" class="books-grid">
+                    <!-- Books will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Book Modal -->
+        <div id="bookModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2 id="modalTitle">Add Book</h2>
+                <form id="bookForm">
+                    <input type="hidden" id="bookId">
+                    <div class="form-group">
+                        <label for="bookTitle">Title</label>
+                        <input type="text" id="bookTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bookAuthor">Author</label>
+                        <input type="text" id="bookAuthor" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bookIsbn">ISBN</label>
+                        <input type="text" id="bookIsbn" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bookPublishedYear">Published Year</label>
+                        <input type="number" id="bookPublishedYear" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Book</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script src="encryption.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
