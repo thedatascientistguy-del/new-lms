@@ -84,9 +84,9 @@ builder.Services.AddAuthentication(options =>
     {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(jwtKey),
-        ValidateIssuer = false, // Custom validation in middleware
-        ValidateAudience = false, // Custom validation in middleware
-        ValidateLifetime = true,
+        ValidateIssuer = false, // Disabled - issuer is encrypted
+        ValidateAudience = false, // Disabled - audience is encrypted
+        ValidateLifetime = true, // Validates standard exp claim
         ClockSkew = TimeSpan.Zero
     };
 });

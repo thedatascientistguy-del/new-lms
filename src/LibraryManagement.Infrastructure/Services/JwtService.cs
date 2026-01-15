@@ -42,7 +42,8 @@ namespace LibraryManagement.Infrastructure.Services
             var encryptedExp = _encryptionService.Encrypt(new DateTimeOffset(expires).ToUnixTimeSeconds().ToString());
             var encryptedIat = _encryptionService.Encrypt(new DateTimeOffset(now).ToUnixTimeSeconds().ToString());
             
-            // Create JWT with encrypted claim VALUES (structure is visible, data is not)
+            // Create JWT with encrypted claim values
+            // We add encrypted iss and aud as custom claims since standard ones need to be plain for validation
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[]
@@ -53,10 +54,10 @@ namespace LibraryManagement.Infrastructure.Services
                     new Claim("nbf", encryptedNbf),
                     new Claim("exp", encryptedExp),
                     new Claim("iat", encryptedIat),
-                    new Claim("iss", encryptedIssuer),
-                    new Claim("aud", encryptedAudience)
+                    new Claim("iss", encryptedIssuer),      // Encrypted issuer in standard claim
+                    new Claim("aud", encryptedAudience)     // Encrypted audience in standard claim
                 }),
-                Expires = expires,
+                Expires = expires,  // Standard JWT expiration for validation
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(key),
                     SecurityAlgorithms.HmacSha256Signature)
@@ -77,43 +78,37 @@ namespace LibraryManagement.Infrastructure.Services
                 var key = Encoding.UTF8.GetBytes(_secretKey);
                 
                 // Validate JWT signature and structure
+                // Disable issuer/audience validation since they're encrypted
                 var validationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = false, // We'll validate manually after decryption
+                    ValidateIssuer = false,  // We'll validate manually after decryption
                     ValidateAudience = false, // We'll validate manually after decryption
-                    ValidateLifetime = true,
+                    ValidateLifetime = true, // Validates standard exp claim
                     ClockSkew = TimeSpan.Zero
                 };
                 
                 var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
                 
-                // Extract and decrypt claims
+                // Extract and decrypt encrypted claims
                 var encryptedUserId = principal.FindFirst("uid")?.Value;
+                var encryptedEmail = principal.FindFirst("eml")?.Value;
+                var encryptedJti = principal.FindFirst("jti")?.Value;
                 var encryptedExp = principal.FindFirst("exp")?.Value;
+                var encryptedNbf = principal.FindFirst("nbf")?.Value;
+                var encryptedIat = principal.FindFirst("iat")?.Value;
                 var encryptedIssuer = principal.FindFirst("iss")?.Value;
                 var encryptedAudience = principal.FindFirst("aud")?.Value;
                 
                 if (string.IsNullOrEmpty(encryptedUserId))
                     return null;
                 
-                // Decrypt claim values
+                // Decrypt user ID
                 var userIdStr = _encryptionService.Decrypt(encryptedUserId);
                 var userId = int.Parse(userIdStr);
                 
-                // Validate expiration
-                if (!string.IsNullOrEmpty(encryptedExp))
-                {
-                    var expStr = _encryptionService.Decrypt(encryptedExp);
-                    var exp = long.Parse(expStr);
-                    var expDateTime = DateTimeOffset.FromUnixTimeSeconds(exp).UtcDateTime;
-                    
-                    if (expDateTime < DateTime.UtcNow)
-                        return null;
-                }
-                
-                // Validate issuer
+                // Decrypt and validate issuer
                 if (!string.IsNullOrEmpty(encryptedIssuer))
                 {
                     var issuer = _encryptionService.Decrypt(encryptedIssuer);
@@ -121,11 +116,22 @@ namespace LibraryManagement.Infrastructure.Services
                         return null;
                 }
                 
-                // Validate audience
+                // Decrypt and validate audience
                 if (!string.IsNullOrEmpty(encryptedAudience))
                 {
                     var audience = _encryptionService.Decrypt(encryptedAudience);
                     if (audience != _audience)
+                        return null;
+                }
+                
+                // Decrypt and validate expiration from encrypted claim
+                if (!string.IsNullOrEmpty(encryptedExp))
+                {
+                    var expStr = _encryptionService.Decrypt(encryptedExp);
+                    var exp = long.Parse(expStr);
+                    var expDateTime = DateTimeOffset.FromUnixTimeSeconds(exp).UtcDateTime;
+                    
+                    if (expDateTime < DateTime.UtcNow)
                         return null;
                 }
                 

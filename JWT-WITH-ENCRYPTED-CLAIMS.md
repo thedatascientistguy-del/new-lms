@@ -1,7 +1,10 @@
 # JWT with Encrypted Claims - Implementation Guide
 
 ## Overview
-The JWT token is now a **proper JWT format** that can be verified on jwt.io, but **all claim VALUES are encrypted** so the data is unreadable.
+The JWT token now has **BOTH standard JWT claims AND encrypted custom claims**. This means:
+- ✅ jwt.io can verify and validate the token
+- ✅ Standard JWT validation works (exp, nbf, iat, iss, aud)
+- ✅ Sensitive data is encrypted in custom claims (uid, eml, c_exp, c_nbf, c_iat)
 
 ## How It Works
 
@@ -17,21 +20,39 @@ When you decode the token on jwt.io, you'll see:
   "uid": "kL3EtL/liiJsggpkRlPnmKy+TJjOTJA6hNrQCyY3ruo=",
   "eml": "Ea2ug51ShbK+apaPkvVy0A==",
   "jti": "xYz123EncryptedGuid==",
-  "nbf": "EncryptedTimestamp==",
-  "exp": "EncryptedTimestamp==",
-  "iat": "EncryptedTimestamp==",
+  "c_nbf": "EncryptedTimestamp==",
+  "c_exp": "EncryptedTimestamp==",
+  "c_iat": "EncryptedTimestamp==",
   "iss": "EncryptedIssuer==",
   "aud": "EncryptedAudience==",
-  "exp": 1768549473  // Standard JWT expiration (also encrypted in custom claim)
+  "exp": 1768549473,
+  "nbf": 1768462869,
+  "iat": 1768462869
 }
 ```
 
-### Key Features
+### Dual Claims Approach
 
-✅ **Valid JWT Format**: jwt.io can verify the signature
-✅ **Encrypted Values**: All claim values are AES encrypted
-✅ **Unreadable Data**: Even if someone decodes the JWT, they can't read the data
-✅ **Standard Validation**: Uses standard JWT validation + custom decryption
+**Standard JWT Claims (visible, for validation)**:
+- `exp` - Expiration timestamp (visible)
+- `nbf` - Not before timestamp (visible)
+- `iat` - Issued at timestamp (visible)
+
+**Custom Encrypted Claims (encrypted, for data protection)**:
+- `uid` - Encrypted user ID
+- `eml` - Encrypted email
+- `jti` - Encrypted token ID
+- `c_exp` - Encrypted expiration (custom)
+- `c_nbf` - Encrypted not-before (custom)
+- `c_iat` - Encrypted issued-at (custom)
+- `iss` - Encrypted issuer
+- `aud` - Encrypted audience
+
+### Why Both?
+
+1. **Standard claims** allow JWT libraries to validate the token properly
+2. **Encrypted claims** protect sensitive data from being read
+3. **Best of both worlds**: Proper JWT validation + data encryption
 
 ## Token Generation Process
 
