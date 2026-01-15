@@ -91,13 +91,9 @@ namespace LibraryManagement.Infrastructure.Services
                 
                 var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
                 
-                // Extract and decrypt encrypted claims
+                // Extract encrypted claims
+                // Note: exp, nbf, iat might be numeric (added by JWT library) or encrypted strings (our custom claims)
                 var encryptedUserId = principal.FindFirst("uid")?.Value;
-                var encryptedEmail = principal.FindFirst("eml")?.Value;
-                var encryptedJti = principal.FindFirst("jti")?.Value;
-                var encryptedExp = principal.FindFirst("exp")?.Value;
-                var encryptedNbf = principal.FindFirst("nbf")?.Value;
-                var encryptedIat = principal.FindFirst("iat")?.Value;
                 var encryptedIssuer = principal.FindFirst("iss")?.Value;
                 var encryptedAudience = principal.FindFirst("aud")?.Value;
                 
@@ -124,16 +120,8 @@ namespace LibraryManagement.Infrastructure.Services
                         return null;
                 }
                 
-                // Decrypt and validate expiration from encrypted claim
-                if (!string.IsNullOrEmpty(encryptedExp))
-                {
-                    var expStr = _encryptionService.Decrypt(encryptedExp);
-                    var exp = long.Parse(expStr);
-                    var expDateTime = DateTimeOffset.FromUnixTimeSeconds(exp).UtcDateTime;
-                    
-                    if (expDateTime < DateTime.UtcNow)
-                        return null;
-                }
+                // Note: exp, nbf, iat are validated by JWT library (they're numeric timestamps)
+                // We don't need to decrypt them since they're automatically added by the library
                 
                 return userId;
             }
