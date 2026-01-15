@@ -46,23 +46,9 @@ namespace LibraryManagement.Infrastructure.Services
             // Encrypt the entire payload
             var encryptedPayload = _encryptionService.Encrypt(payloadJson);
             
-            // Create JWT with only the encrypted payload as a single claim
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim("data", encryptedPayload) // All data encrypted in one claim
-                }),
-                Expires = DateTime.UtcNow.AddHours(24),
-                Issuer = _issuer,
-                Audience = _audience,
-                SigningCredentials = new SigningCredentials(
-                    new SymmetricSecurityKey(key),
-                    SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+            // Return ONLY the encrypted string (no JWT wrapper)
+            // This way, EVERYTHING is encrypted - no visible claims at all
+            return encryptedPayload;
         }
 
         public int? ValidateToken(string token)
@@ -70,37 +56,12 @@ namespace LibraryManagement.Infrastructure.Services
             if (string.IsNullOrEmpty(token))
                 return null;
 
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(_secretKey);
-
             try
             {
-                var validationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = true,
-                    ValidIssuer = _issuer,
-                    ValidateAudience = true,
-                    ValidAudience = _audience,
-                    ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero
-                };
-
-                var principal = tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
+                // Decrypt the token (it's just an encrypted string now)
+                var decryptedJson = _encryptionService.Decrypt(token);
                 
-                var jwtToken = (JwtSecurityToken)validatedToken;
-                
-                // Get the encrypted data claim
-                var encryptedData = jwtToken.Claims.FirstOrDefault(x => x.Type == "data")?.Value;
-                
-                if (string.IsNullOrEmpty(encryptedData))
-                    return null;
-                
-                // Decrypt the entire payload
-                var decryptedJson = _encryptionService.Decrypt(encryptedData);
-                
-                // Deserialize to get the user ID
+                // Deserialize to get the payload
                 var payloadDoc = JsonDocument.Parse(decryptedJson);
                 var userId = payloadDoc.RootElement.GetProperty("uid").GetInt32();
                 
@@ -110,6 +71,16 @@ namespace LibraryManagement.Infrastructure.Services
                 
                 if (expDateTime < DateTime.UtcNow)
                     return null; // Token expired
+                
+                // Validate issuer
+                var iss = payloadDoc.RootElement.GetProperty("iss").GetString();
+                if (iss != _issuer)
+                    return null;
+                
+                // Validate audience
+                var aud = payloadDoc.RootElement.GetProperty("aud").GetString();
+                if (aud != _audience)
+                    return null;
                 
                 return userId;
             }

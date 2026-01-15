@@ -1,14 +1,12 @@
 using LibraryManagement.Core.DTOs;
 using LibraryManagement.Core.Entities;
 using LibraryManagement.Core.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LibraryManagement.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class BooksController : ControllerBase
     {
         private readonly IBookRepository _bookRepository;
