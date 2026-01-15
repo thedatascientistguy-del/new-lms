@@ -81,16 +81,31 @@ async function apiCall(endpoint, method = 'GET', body = null, encrypt = false) {
         const jsonBody = JSON.stringify(body);
         
         if (encrypt) {
-            // Encrypt the payload
-            const encryptedBody = await encryptString(jsonBody);
-            options.body = encryptedBody;
-            headers['Content-Type'] = 'text/plain'; // Encrypted data is not JSON
+            // Check if encryption function is available
+            if (typeof encryptString !== 'function') {
+                console.error('Encryption function not available! Sending plain JSON instead.');
+                showNotification('Warning: Encryption not available, sending plain data', 'info');
+                options.body = jsonBody;
+            } else {
+                try {
+                    // Encrypt the payload
+                    const encryptedBody = await encryptString(jsonBody);
+                    options.body = encryptedBody;
+                    headers['Content-Type'] = 'text/plain'; // Encrypted data is not JSON
+                    console.log('Payload encrypted successfully');
+                } catch (encError) {
+                    console.error('Encryption failed:', encError);
+                    showNotification('Encryption failed, sending plain data', 'info');
+                    options.body = jsonBody;
+                }
+            }
         } else {
             options.body = jsonBody;
         }
     }
     
     try {
+        console.log(`API Call: ${method} ${endpoint}`);
         const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
         
         if (response.status === 401) {
@@ -101,6 +116,7 @@ async function apiCall(endpoint, method = 'GET', body = null, encrypt = false) {
         
         if (!response.ok) {
             const error = await response.text();
+            console.error('API Error Response:', error);
             throw new Error(error || 'Request failed');
         }
         
@@ -124,18 +140,27 @@ async function handleLogin(e) {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
     
-    // Send encrypted payload
-    const result = await apiCall('/api/auth/login', 'POST', { email, password }, true);
+    console.log('Attempting login...', { email });
     
-    if (result && result.token) {
-        currentToken = result.token;
-        currentUser = { userId: result.userId, email };
+    try {
+        // Send encrypted payload
+        const result = await apiCall('/api/auth/login', 'POST', { email, password }, true);
         
-        localStorage.setItem('token', currentToken);
-        localStorage.setItem('user', JSON.stringify(currentUser));
-        
-        showNotification('Login successful!', 'success');
-        showDashboard();
+        if (result && result.token) {
+            currentToken = result.token;
+            currentUser = { userId: result.userId, email };
+            
+            localStorage.setItem('token', currentToken);
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            
+            showNotification('Login successful!', 'success');
+            showDashboard();
+        } else {
+            showNotification('Login failed. Please check your credentials.', 'error');
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        showNotification('Login error: ' + error.message, 'error');
     }
 }
 
@@ -146,18 +171,27 @@ async function handleSignup(e) {
     const email = document.getElementById('signupEmail').value;
     const password = document.getElementById('signupPassword').value;
     
-    // Send encrypted payload
-    const result = await apiCall('/api/auth/signup', 'POST', { username, email, password }, true);
+    console.log('Attempting signup...', { username, email });
     
-    if (result && result.token) {
-        currentToken = result.token;
-        currentUser = { userId: result.userId, email };
+    try {
+        // Send encrypted payload
+        const result = await apiCall('/api/auth/signup', 'POST', { username, email, password }, true);
         
-        localStorage.setItem('token', currentToken);
-        localStorage.setItem('user', JSON.stringify(currentUser));
-        
-        showNotification('Signup successful!', 'success');
-        showDashboard();
+        if (result && result.token) {
+            currentToken = result.token;
+            currentUser = { userId: result.userId, email };
+            
+            localStorage.setItem('token', currentToken);
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            
+            showNotification('Signup successful!', 'success');
+            showDashboard();
+        } else {
+            showNotification('Signup failed. Please try again.', 'error');
+        }
+    } catch (error) {
+        console.error('Signup error:', error);
+        showNotification('Signup error: ' + error.message, 'error');
     }
 }
 
@@ -211,13 +245,22 @@ async function handleSaveBook(e) {
         publishedYear: parseInt(document.getElementById('bookPublishedYear').value)
     };
     
-    // Send encrypted payload
-    const result = await apiCall('/api/books', 'POST', book, true);
+    console.log('Adding book...', book);
     
-    if (result) {
-        showNotification('Book added successfully!', 'success');
-        closeBookModal();
-        loadBooks();
+    try {
+        // Send encrypted payload
+        const result = await apiCall('/api/books', 'POST', book, true);
+        
+        if (result) {
+            showNotification('Book added successfully!', 'success');
+            closeBookModal();
+            loadBooks();
+        } else {
+            showNotification('Failed to add book', 'error');
+        }
+    } catch (error) {
+        console.error('Add book error:', error);
+        showNotification('Error adding book: ' + error.message, 'error');
     }
 }
 
