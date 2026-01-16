@@ -118,7 +118,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowAll");
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-app.UseMiddleware<DecryptionMiddleware>();
+app.UseMiddleware<DecryptionMiddleware>(); // Decrypt incoming requests
 
 app.UseHttpsRedirection();
 
@@ -128,6 +128,8 @@ app.UseAuthorization();
 
 // Custom JWT validation for encrypted claims
 app.UseMiddleware<JwtValidationMiddleware>();
+
+app.UseMiddleware<EncryptionMiddleware>(); // Encrypt outgoing responses
 
 app.MapControllers();
 app.Run();

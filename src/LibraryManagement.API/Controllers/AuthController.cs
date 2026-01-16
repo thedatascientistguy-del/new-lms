@@ -13,22 +13,32 @@ namespace LibraryManagement.API.Controllers
     {
         private readonly IUserRepository _userRepository;
         private readonly IJwtService _jwtService;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IUserRepository userRepository, IJwtService jwtService)
+        public AuthController(IUserRepository userRepository, IJwtService jwtService, ILogger<AuthController> logger)
         {
             _userRepository = userRepository;
             _jwtService = jwtService;
+            _logger = logger;
         }
 
         [HttpPost("signup")]
         public async Task<IActionResult> Signup([FromBody] SignupRequest request)
         {
+            _logger.LogInformation("Signup attempt for email: {Email}", request.Email);
+            
             if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+            {
+                _logger.LogWarning("Signup failed: Missing email or password");
                 return BadRequest("Email and password are required");
+            }
 
             var existingUser = await _userRepository.GetByEmailAsync(request.Email);
             if (existingUser != null)
+            {
+                _logger.LogWarning("Signup failed: User {Email} already exists", request.Email);
                 return BadRequest("User already exists");
+            }
 
             var user = new User
             {
@@ -41,6 +51,8 @@ namespace LibraryManagement.API.Controllers
             var userId = await _userRepository.CreateAsync(user);
             var token = _jwtService.GenerateToken(userId, user.Email);
 
+            _logger.LogInformation("User {UserId} signed up successfully with email: {Email}", userId, request.Email);
+            
             return Ok(new AuthResponse
             {
                 UserId = userId,
@@ -52,15 +64,25 @@ namespace LibraryManagement.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
+            _logger.LogInformation("Login attempt for email: {Email}", request.Email);
+            
             if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+            {
+                _logger.LogWarning("Login failed: Missing email or password");
                 return BadRequest("Email and password are required");
+            }
 
             var user = await _userRepository.GetByEmailAsync(request.Email);
             if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
+            {
+                _logger.LogWarning("Login failed: Invalid credentials for email: {Email}", request.Email);
                 return Unauthorized("Invalid credentials");
+            }
 
             var token = _jwtService.GenerateToken(user.Id, user.Email);
 
+            _logger.LogInformation("User {UserId} logged in successfully", user.Id);
+            
             return Ok(new AuthResponse
             {
                 UserId = user.Id,

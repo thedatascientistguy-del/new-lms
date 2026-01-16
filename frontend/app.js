@@ -121,7 +121,26 @@ async function apiCall(endpoint, method = 'GET', body = null, encrypt = false) {
         }
         
         const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
+        
+        // Check if response is encrypted (text/plain) or plain JSON
+        if (contentType && contentType.includes('text/plain')) {
+            // Response is encrypted, decrypt it
+            const encryptedText = await response.text();
+            
+            if (encryptedText && typeof decryptString === 'function') {
+                try {
+                    const decryptedText = await decryptString(encryptedText);
+                    console.log('Response decrypted successfully');
+                    return JSON.parse(decryptedText);
+                } catch (decError) {
+                    console.error('Decryption failed:', decError);
+                    throw new Error('Failed to decrypt response');
+                }
+            }
+            
+            return encryptedText;
+        } else if (contentType && contentType.includes('application/json')) {
+            // Plain JSON response
             return await response.json();
         }
         
