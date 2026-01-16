@@ -31,20 +31,59 @@ function log(message, data = null, level = 'info') {
 document.addEventListener('DOMContentLoaded', () => {
     log('Application initialized');
     
-    // Check if user is authenticated
-    if (currentToken && isTokenValid()) {
-        log('Valid token found, showing dashboard');
-        showDashboard();
-        startSessionMonitoring();
-    } else {
-        log('No valid token, showing login page');
-        clearSession();
-        showLogin();
-    }
+    // Handle initial route from URL
+    handleRoute();
+    
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleRoute);
     
     setupEventListeners();
     setupRouteProtection();
 });
+
+// Route Handler
+function handleRoute() {
+    const hash = window.location.hash.slice(1) || 'login'; // Remove # and default to login
+    log('Route changed', { hash });
+    
+    // Check authentication for protected routes
+    const protectedRoutes = ['dashboard', 'my-books', 'add-book'];
+    
+    if (protectedRoutes.includes(hash)) {
+        if (currentToken && isTokenValid()) {
+            // User is authenticated, show the page
+            switch(hash) {
+                case 'dashboard':
+                case 'my-books':
+                    showMyBooks();
+                    startSessionMonitoring();
+                    break;
+                case 'add-book':
+                    showAddBook();
+                    startSessionMonitoring();
+                    break;
+            }
+        } else {
+            // Not authenticated, redirect to login
+            log('Unauthorized route access attempt', { hash }, 'warn');
+            window.location.hash = 'login';
+            showLogin();
+        }
+    } else {
+        // Public routes
+        switch(hash) {
+            case 'login':
+                showLogin();
+                break;
+            case 'signup':
+                showSignup();
+                break;
+            default:
+                window.location.hash = 'login';
+                showLogin();
+        }
+    }
+}
 
 // Route Protection - Prevent manual URL navigation
 function setupRouteProtection() {
@@ -172,13 +211,13 @@ function setupEventListeners() {
     document.getElementById('showSignup').addEventListener('click', (e) => {
         e.preventDefault();
         log('User clicked signup link');
-        showSignup();
+        window.location.hash = 'signup';
     });
     
     document.getElementById('showLogin').addEventListener('click', (e) => {
         e.preventDefault();
         log('User clicked login link');
-        showLogin();
+        window.location.hash = 'login';
     });
     
     // Logout
@@ -187,12 +226,12 @@ function setupEventListeners() {
     // Navigation
     document.getElementById('navMyBooks').addEventListener('click', () => {
         log('User navigated to My Books');
-        showMyBooks();
+        window.location.hash = 'my-books';
     });
     
     document.getElementById('navAddBook').addEventListener('click', () => {
         log('User navigated to Add Book');
-        showAddBook();
+        window.location.hash = 'add-book';
     });
     
     // Book Form
@@ -331,7 +370,7 @@ async function handleLogin(e) {
             setSession(result.token, { userId: result.userId, email, username: result.username });
             
             showNotification('Login successful!', 'success');
-            showDashboard();
+            window.location.hash = 'my-books'; // Redirect to dashboard
             startSessionMonitoring();
         } else {
             log('Login failed - invalid response', { result }, 'warn');
@@ -364,7 +403,7 @@ async function handleSignup(e) {
             setSession(result.token, { userId: result.userId, email, username: result.username });
             
             showNotification('Signup successful!', 'success');
-            showDashboard();
+            window.location.hash = 'my-books'; // Redirect to dashboard
             startSessionMonitoring();
         } else {
             log('Signup failed - invalid response', { result }, 'warn');
@@ -451,8 +490,7 @@ async function handleSaveBook(e) {
             log('Book added successfully', { bookId: result.id });
             showNotification('Book added successfully!', 'success');
             document.getElementById('bookForm').reset();
-            showMyBooks();
-            loadBooks();
+            window.location.hash = 'my-books'; // Redirect to my-books
         } else {
             log('Failed to add book', null, 'error');
             showNotification('Failed to add book', 'error');
@@ -495,6 +533,7 @@ function showLogin() {
     signupPage.classList.remove('active');
     dashboardPage.classList.remove('active');
     document.getElementById('loginForm').reset();
+    window.location.hash = 'login';
 }
 
 function showSignup() {
@@ -503,6 +542,7 @@ function showSignup() {
     signupPage.classList.add('active');
     dashboardPage.classList.remove('active');
     document.getElementById('signupForm').reset();
+    window.location.hash = 'signup';
 }
 
 function showDashboard() {
@@ -523,7 +563,8 @@ function showDashboard() {
         log('User info displayed', { email: currentUser.email });
     }
     
-    showMyBooks();
+    // Default to my-books page
+    window.location.hash = 'my-books';
 }
 
 function showMyBooks() {
@@ -535,13 +576,24 @@ function showMyBooks() {
         return;
     }
     
+    // Show dashboard container
+    loginPage.classList.remove('active');
+    signupPage.classList.remove('active');
+    dashboardPage.classList.add('active');
+    
+    // Show my books section
     myBooksSection.classList.add('active');
     addBookSection.classList.remove('active');
     
     document.getElementById('navMyBooks').classList.add('active');
     document.getElementById('navAddBook').classList.remove('active');
     
+    if (currentUser) {
+        document.getElementById('userEmail').textContent = currentUser.email;
+    }
+    
     loadBooks();
+    window.location.hash = 'my-books';
 }
 
 function showAddBook() {
@@ -553,13 +605,24 @@ function showAddBook() {
         return;
     }
     
+    // Show dashboard container
+    loginPage.classList.remove('active');
+    signupPage.classList.remove('active');
+    dashboardPage.classList.add('active');
+    
+    // Show add book section
     myBooksSection.classList.remove('active');
     addBookSection.classList.add('active');
     
     document.getElementById('navMyBooks').classList.remove('active');
     document.getElementById('navAddBook').classList.add('active');
     
+    if (currentUser) {
+        document.getElementById('userEmail').textContent = currentUser.email;
+    }
+    
     document.getElementById('bookForm').reset();
+    window.location.hash = 'add-book';
 }
 
 function showNotification(message, type = 'info') {
