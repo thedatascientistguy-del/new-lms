@@ -274,15 +274,18 @@ async function apiCall(endpoint, method = 'GET', body = null, encrypt = false) {
         // Check if response is encrypted (text/plain) or plain JSON
         if (contentType && contentType.includes('text/plain')) {
             const encryptedText = await response.text();
-            log('Encrypted response received', { size: encryptedText.length });
+            log('Encrypted response received', { size: encryptedText.length, preview: encryptedText.substring(0, 50) + '...' });
             
             if (encryptedText && typeof decryptString === 'function') {
                 try {
                     const decryptedText = await decryptString(encryptedText);
-                    log('Response decrypted successfully', { size: decryptedText.length });
-                    return JSON.parse(decryptedText);
+                    log('Response decrypted successfully', { size: decryptedText.length, preview: decryptedText.substring(0, 100) });
+                    const parsed = JSON.parse(decryptedText);
+                    log('Response parsed successfully', parsed);
+                    return parsed;
                 } catch (decError) {
                     log('Decryption failed', decError, 'error');
+                    log('Encrypted text that failed', { encryptedText: encryptedText.substring(0, 200) }, 'error');
                     throw new Error('Failed to decrypt response');
                 }
             }
@@ -290,11 +293,13 @@ async function apiCall(endpoint, method = 'GET', body = null, encrypt = false) {
             return encryptedText;
         } else if (contentType && contentType.includes('application/json')) {
             const jsonData = await response.json();
-            log('Plain JSON response received');
+            log('Plain JSON response received', jsonData);
             return jsonData;
         }
         
-        return await response.text();
+        const textData = await response.text();
+        log('Plain text response received', { text: textData });
+        return textData;
     } catch (error) {
         log('API Call failed', error, 'error');
         showNotification(error.message, 'error');
@@ -315,6 +320,8 @@ async function handleLogin(e) {
     try {
         const result = await apiCall('/api/auth/login', 'POST', { email, password }, true);
         
+        log('Login API result received', result);
+        
         if (result && result.token) {
             log('Login successful', { userId: result.userId });
             
@@ -324,7 +331,7 @@ async function handleLogin(e) {
             showDashboard();
             startSessionMonitoring();
         } else {
-            log('Login failed - invalid response', null, 'warn');
+            log('Login failed - invalid response', { result }, 'warn');
             showNotification('Login failed. Please check your credentials.', 'error');
         }
     } catch (error) {
@@ -346,6 +353,8 @@ async function handleSignup(e) {
     try {
         const result = await apiCall('/api/auth/signup', 'POST', { username, email, password }, true);
         
+        log('Signup API result received', result);
+        
         if (result && result.token) {
             log('Signup successful', { userId: result.userId });
             
@@ -355,7 +364,7 @@ async function handleSignup(e) {
             showDashboard();
             startSessionMonitoring();
         } else {
-            log('Signup failed - invalid response', null, 'warn');
+            log('Signup failed - invalid response', { result }, 'warn');
             showNotification('Signup failed. Please try again.', 'error');
         }
     } catch (error) {
