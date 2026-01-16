@@ -251,10 +251,13 @@ async function apiCall(endpoint, method = 'GET', body = null, encrypt = false) {
     
     try {
         const startTime = Date.now();
+        log(`Fetching URL: ${API_BASE_URL}${endpoint} with method: ${method}`);
+        log('Fetch options:', { method, headers, bodyLength: options.body ? options.body.length : 0 });
+        
         const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
         const duration = Date.now() - startTime;
         
-        log(`API Response: ${response.status} ${response.statusText}`, { duration: `${duration}ms` });
+        log(`API Response received: ${response.status} ${response.statusText}`, { duration: `${duration}ms`, ok: response.ok });
         
         if (response.status === 401) {
             log('Unauthorized response, session expired', null, 'warn');
