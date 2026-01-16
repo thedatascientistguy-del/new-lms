@@ -63,42 +63,43 @@
                 </div>
             </div>
 
-            <div class="dashboard-content">
-                <div class="actions">
-                    <button id="addBookBtn" class="btn btn-primary">Add New Book</button>
-                </div>
+            <nav class="nav-menu">
+                <button id="navMyBooks" class="nav-btn active">My Books</button>
+                <button id="navAddBook" class="nav-btn">Add Book</button>
+            </nav>
 
+            <!-- My Books Section -->
+            <div id="myBooksSection" class="dashboard-content active">
+                <h2>My Books Collection</h2>
                 <div id="booksContainer" class="books-grid">
                     <!-- Books will be loaded here -->
                 </div>
             </div>
-        </div>
 
-        <!-- Add/Edit Book Modal -->
-        <div id="bookModal" class="modal">
-            <div class="modal-content">
-                <span class="close">&times;</span>
-                <h2 id="modalTitle">Add Book</h2>
-                <form id="bookForm">
-                    <input type="hidden" id="bookId">
-                    <div class="form-group">
-                        <label for="bookTitle">Title</label>
-                        <input type="text" id="bookTitle" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="bookAuthor">Author</label>
-                        <input type="text" id="bookAuthor" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="bookIsbn">ISBN</label>
-                        <input type="text" id="bookIsbn" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="bookPublishedYear">Published Year</label>
-                        <input type="number" id="bookPublishedYear" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Save Book</button>
-                </form>
+            <!-- Add Book Section -->
+            <div id="addBookSection" class="dashboard-content">
+                <h2>Add New Book</h2>
+                <div class="form-container-inline">
+                    <form id="bookForm">
+                        <div class="form-group">
+                            <label for="bookTitle">Title</label>
+                            <input type="text" id="bookTitle" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookAuthor">Author</label>
+                            <input type="text" id="bookAuthor" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookIsbn">ISBN</label>
+                            <input type="text" id="bookIsbn" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookPublishedYear">Published Year</label>
+                            <input type="number" id="bookPublishedYear" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Book</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
