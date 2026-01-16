@@ -129,7 +129,8 @@ app.UseAuthorization();
 // Custom JWT validation for encrypted claims
 app.UseMiddleware<JwtValidationMiddleware>();
 
-app.UseMiddleware<EncryptionMiddleware>(); // Encrypt outgoing responses
+// Encrypt outgoing responses - MUST be before MapControllers
+app.UseMiddleware<EncryptionMiddleware>();
 
 app.MapControllers();
 app.Run();
