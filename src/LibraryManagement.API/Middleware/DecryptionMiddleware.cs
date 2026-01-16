@@ -43,6 +43,9 @@ namespace LibraryManagement.API.Middleware
                             var bytes = Encoding.UTF8.GetBytes(decryptedBody);
                             context.Request.Body = new MemoryStream(bytes);
                             context.Request.Body.Position = 0;
+                            
+                            // Change Content-Type back to JSON after decryption
+                            context.Request.ContentType = "application/json";
                         }
                         catch
                         {
