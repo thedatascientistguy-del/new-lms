@@ -89,28 +89,9 @@ function handleRoute() {
 function setupRouteProtection() {
     log('Setting up route protection');
     
-    // Prevent back/forward navigation to protected pages
-    window.addEventListener('popstate', (e) => {
-        log('Navigation detected via browser history');
-        if (!currentToken || !isTokenValid()) {
-            log('Unauthorized navigation attempt blocked', null, 'warn');
-            e.preventDefault();
-            clearSession();
-            showLogin();
-            showNotification('Please login to access the application', 'error');
-        }
-    });
-    
-    // Prevent direct page access via URL manipulation
-    window.addEventListener('hashchange', (e) => {
-        log('Hash change detected');
-        if (!currentToken || !isTokenValid()) {
-            log('Unauthorized hash navigation blocked', null, 'warn');
-            e.preventDefault();
-            clearSession();
-            showLogin();
-        }
-    });
+    // The route protection is now handled by handleRoute()
+    // No need for additional popstate/hashchange listeners here
+    // as they would conflict with the routing system
 }
 
 // Session Management
