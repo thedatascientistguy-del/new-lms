@@ -11,6 +11,17 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// CORS Configuration
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 // Controllers
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -102,6 +113,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Enable CORS
+app.UseCors("AllowAll");
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<DecryptionMiddleware>();

@@ -41,8 +41,13 @@ async function deriveKey() {
     const encoder = new TextEncoder();
     const keyMaterial = encoder.encode(SECRET_KEY);
     
+    // Check if crypto.subtle is available (requires HTTPS or localhost)
+    if (!window.crypto || !window.crypto.subtle) {
+        throw new Error('Web Crypto API not available. Please use HTTPS or localhost.');
+    }
+    
     // Hash with SHA-256 (matches backend)
-    const hashBuffer = await crypto.subtle.digest('SHA-256', keyMaterial);
+    const hashBuffer = await window.crypto.subtle.digest('SHA-256', keyMaterial);
     const hashArray = new Uint8Array(hashBuffer);
     
     // Key is full 32 bytes, IV is first 16 bytes (matches backend)
@@ -54,7 +59,7 @@ async function deriveKey() {
 
 // Import key for Web Crypto API
 async function importKey(keyBytes) {
-    return await crypto.subtle.importKey(
+    return await window.crypto.subtle.importKey(
         'raw',
         keyBytes,
         { name: 'AES-CBC' },
@@ -74,7 +79,7 @@ async function encryptString(plainText) {
         const encoder = new TextEncoder();
         const data = encoder.encode(plainText);
         
-        const encrypted = await crypto.subtle.encrypt(
+        const encrypted = await window.crypto.subtle.encrypt(
             { name: 'AES-CBC', iv: iv },
             cryptoKey,
             data
@@ -97,7 +102,7 @@ async function decryptString(cipherText) {
         
         const encryptedData = base64ToArrayBuffer(cipherText);
         
-        const decrypted = await crypto.subtle.decrypt(
+        const decrypted = await window.crypto.subtle.decrypt(
             { name: 'AES-CBC', iv: iv },
             cryptoKey,
             encryptedData
