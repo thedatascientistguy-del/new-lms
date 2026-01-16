@@ -533,7 +533,7 @@ function showLogin() {
     signupPage.classList.remove('active');
     dashboardPage.classList.remove('active');
     document.getElementById('loginForm').reset();
-    window.location.hash = 'login';
+    // Don't set hash here - it's already set by handleRoute
 }
 
 function showSignup() {
@@ -542,7 +542,7 @@ function showSignup() {
     signupPage.classList.add('active');
     dashboardPage.classList.remove('active');
     document.getElementById('signupForm').reset();
-    window.location.hash = 'signup';
+    // Don't set hash here - it's already set by handleRoute
 }
 
 function showDashboard() {
@@ -593,7 +593,7 @@ function showMyBooks() {
     }
     
     loadBooks();
-    window.location.hash = 'my-books';
+    // Don't set hash here - it's already set by handleRoute or navigation
 }
 
 function showAddBook() {
@@ -622,7 +622,7 @@ function showAddBook() {
     }
     
     document.getElementById('bookForm').reset();
-    window.location.hash = 'add-book';
+    // Don't set hash here - it's already set by handleRoute or navigation
 }
 
 function showNotification(message, type = 'info') {
