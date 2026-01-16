@@ -5,11 +5,29 @@ using LibraryManagement.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Serilog;
 using System.Data;
 using System.Data.SqlClient;
 using System.Text;
 
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console()
+    .WriteTo.File(
+        path: "logs/app-.log",
+        rollingInterval: RollingInterval.Day,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .CreateLogger();
+
+try
+{
+    Log.Information("Starting Library Management API");
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Serilog
+builder.Host.UseSerilog();
 
 // CORS Configuration
 builder.Services.AddCors(options =>
@@ -134,3 +152,13 @@ app.UseMiddleware<EncryptionMiddleware>();
 
 app.MapControllers();
 app.Run();
+
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
